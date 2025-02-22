@@ -6,6 +6,8 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
 import com.airbnb.lottie.LottieAnimationView
+import android.widget.Button
+import android.content.Intent
 
 class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -22,5 +24,11 @@ class MainActivity : AppCompatActivity() {
         val animationView = findViewById<LottieAnimationView>(R.id.lottieAnimationView)
         animationView.setAnimation(R.raw.retail_animation)
         animationView.playAnimation()
+
+        val btnVendedores = findViewById<Button>(R.id.btnVendedores)
+        btnVendedores.setOnClickListener {
+            val intent = Intent(this, VendedoresActivity::class.java)
+            startActivity(intent)
+        }
     }
 }
