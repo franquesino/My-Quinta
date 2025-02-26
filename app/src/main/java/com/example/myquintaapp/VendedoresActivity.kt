@@ -2,25 +2,23 @@ package com.example.myquintaapp
 
 import android.app.Activity
 import android.content.Intent
-import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.FileProvider
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 
 class VendedoresActivity : AppCompatActivity() {
 
     private lateinit var imgVendedorDestacado: ImageView
-    private lateinit var photoUri: Uri
-    private val REQUEST_IMAGE_CAPTURE = 1
+    private lateinit var photoUri: Uri  // Ahora es lateinit para evitar Smart Cast error
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -41,10 +39,12 @@ class VendedoresActivity : AppCompatActivity() {
         imgVendedorDestacado = findViewById(R.id.imgVendedorDestacado)
         val btnCapturarFoto = findViewById<Button>(R.id.btnCapturarFoto)
 
+        // Evento para capturar foto
         btnCapturarFoto.setOnClickListener {
             abrirCamara()
         }
 
+        // Botón para abrir el gráfico
         val btnVerGrafico = findViewById<Button>(R.id.btnVerGrafico)
         btnVerGrafico.setOnClickListener {
             val intent = Intent(this, GraficoVentasActivity::class.java)
@@ -52,35 +52,35 @@ class VendedoresActivity : AppCompatActivity() {
         }
     }
 
+    // 🔹 Método para abrir la cámara usando FileProvider
     private fun abrirCamara() {
         val intent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-        val photoFile = crearArchivoImagen()
-        if (photoFile != null) {
-            photoUri = FileProvider.getUriForFile(
-                this,
-                "${applicationContext.packageName}.provider",
-                photoFile
-            )
-            intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
-            startActivityForResult(intent, REQUEST_IMAGE_CAPTURE)
+
+        // Crear un archivo para la imagen
+        val photoFile = File(externalCacheDir, "photo_${System.currentTimeMillis()}.jpg")
+
+        // Obtener la URI del archivo usando FileProvider
+        photoUri = FileProvider.getUriForFile(this, "$packageName.provider", photoFile)
+
+        // Agregar la URI como salida de la cámara
+        intent.putExtra(MediaStore.EXTRA_OUTPUT, photoUri)
+        intent.addFlags(Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+
+        // Iniciar la cámara con Activity Result API
+        cameraLauncher.launch(intent)
+    }
+
+    // 🔹 Registrar el resultado de la cámara
+    private val cameraLauncher = registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { result ->
+        if (result.resultCode == Activity.RESULT_OK) {
+            mostrarImagen()
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (requestCode == REQUEST_IMAGE_CAPTURE && resultCode == Activity.RESULT_OK) {
-            imgVendedorDestacado.setImageURI(photoUri)
-        }
-    }
-
-    private fun crearArchivoImagen(): File? {
-        return try {
-            val timeStamp = SimpleDateFormat("yyyyMMdd_HHmmss", Locale.getDefault()).format(Date())
-            val storageDir = getExternalFilesDir(null)
-            File.createTempFile("IMG_$timeStamp", ".jpg", storageDir)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
+    // 🔹 Método para mostrar la imagen capturada
+    private fun mostrarImagen() {
+        val imageStream = contentResolver.openInputStream(photoUri)
+        val bitmap = BitmapFactory.decodeStream(imageStream)
+        imgVendedorDestacado.setImageBitmap(bitmap)
     }
 }
